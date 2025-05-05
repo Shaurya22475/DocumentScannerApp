@@ -1,12 +1,13 @@
 package com.example.documentscannerportable
 
-
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
+import android.view.accessibility.AccessibilityEvent
+import android.view.accessibility.AccessibilityManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -23,14 +24,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -38,49 +38,46 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
-import coil.compose.AsyncImage
+import com.example.documentscannerportable.ui.theme.DocumentScannerPortableTheme
 import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions
-import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions.*
+import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions.SCANNER_MODE_FULL
+import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions.RESULT_FORMAT_JPEG
+import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions.RESULT_FORMAT_PDF
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanning
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
-import com.example.documentscannerportable.ui.theme.DocumentScannerPortableTheme
 import kotlinx.coroutines.delay
 import java.io.File
 import java.io.FileOutputStream
-import android.view.accessibility.AccessibilityEvent
-import android.view.accessibility.AccessibilityManager
-
-
 
 class MainActivity : ComponentActivity() {
+
     @Composable
     fun SplashScreen(onTimeout: () -> Unit) {
         LaunchedEffect(Unit) {
-            delay(2000) // Show for 2 seconds
+            delay(2000)
             onTimeout()
         }
 
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White), // You can change background color
+                .background(Color.White),
             contentAlignment = Alignment.Center
         ) {
             Image(
-                painter = painterResource(id = R.drawable.app_logo_2), // Your logo/image
+                painter = painterResource(id = R.drawable.app_logo_2),
                 contentDescription = "App Splash Logo",
-                modifier = Modifier.size(150.dp) // Adjust size as needed
+                modifier = Modifier.size(150.dp)
             )
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         enableEdgeToEdge()
 
         setContent {
-            DocumentScannerPortableTheme  {
+            DocumentScannerPortableTheme {
                 var showSplash by remember { mutableStateOf(true) }
 
                 if (showSplash) {
@@ -94,6 +91,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
 @Composable
 fun DocumentScannerScreen() {
     val context = LocalContext.current
@@ -116,15 +114,12 @@ fun DocumentScannerScreen() {
                     }
                     fos.close()
                     pdfFiles = loadScannedPdfs(context.filesDir)
-
-                    // Trigger snackbar + talkback
                     showTalkback = true
                 }
             }
         }
     )
 
-    // Accessibility announcement
     if (showTalkback) {
         LaunchedEffect(showTalkback) {
             snackbarHostState.showSnackbar("Scan completed")
@@ -207,17 +202,7 @@ fun DocumentScannerScreen() {
                         ) {
                             Row(
                                 modifier = Modifier
-                                    .clickable {
-                                        val uri = FileProvider.getUriForFile(
-                                            context,
-                                            "${context.packageName}.provider",
-                                            file
-                                        )
-                                        val intent = Intent(Intent.ACTION_VIEW)
-                                        intent.setDataAndType(uri, "application/pdf")
-                                        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                        context.startActivity(intent)
-                                    }
+                                    .fillMaxWidth()
                                     .padding(12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -234,6 +219,17 @@ fun DocumentScannerScreen() {
                                             .width(90.dp)
                                             .height(120.dp)
                                             .clip(RoundedCornerShape(8.dp))
+                                            .clickable {
+                                                val uri = FileProvider.getUriForFile(
+                                                    context,
+                                                    "${context.packageName}.provider",
+                                                    file
+                                                )
+                                                val intent = Intent(Intent.ACTION_VIEW)
+                                                intent.setDataAndType(uri, "application/pdf")
+                                                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                context.startActivity(intent)
+                                            }
                                     )
                                 }
 
@@ -256,6 +252,16 @@ fun DocumentScannerScreen() {
                                         style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
                                     )
                                 }
+
+                                IconButton(onClick = {
+                                    sharePdf(context, file)
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Share,
+                                        contentDescription = "Share PDF",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
                             }
                         }
                     }
@@ -264,8 +270,6 @@ fun DocumentScannerScreen() {
         }
     }
 }
-
-
 
 private val LightColors = lightColorScheme(
     primary = Color(0xFF1976D2),
@@ -276,7 +280,6 @@ private val LightColors = lightColorScheme(
     surface = Color.White,
     onSurface = Color.Black,
 )
-
 
 fun getPdfPreview(file: File): Bitmap? {
     return try {
@@ -300,7 +303,8 @@ fun getPdfPreview(file: File): Bitmap? {
     }
 }
 
-
 fun loadScannedPdfs(dir: File): List<File> {
-    return dir.listFiles { file -> file.extension == "pdf" }?.sortedByDescending { it.lastModified() } ?: emptyList()
+    return dir.listFiles { file -> file.extension == "pdf" }
+        ?.sortedByDescending { it.lastModified() }
+        ?: emptyList()
 }
