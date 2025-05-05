@@ -25,6 +25,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.TextSnippet
+
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -48,6 +50,10 @@ import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
 import kotlinx.coroutines.delay
 import java.io.File
 import java.io.FileOutputStream
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DriveFileRenameOutline
+
 
 class MainActivity : ComponentActivity() {
 
@@ -99,6 +105,15 @@ fun DocumentScannerScreen() {
     val snackbarHostState = remember { SnackbarHostState() }
     var showTalkback by remember { mutableStateOf(false) }
 
+    var showRenameDialog by remember { mutableStateOf(false) }
+    var fileToRename by remember { mutableStateOf<File?>(null) }
+    var newFileName by remember { mutableStateOf("") }
+
+    var fileToDelete by remember { mutableStateOf<File?>(null) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+
+
     val scannerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartIntentSenderForResult(),
         onResult = { result ->
@@ -146,6 +161,66 @@ fun DocumentScannerScreen() {
             .build()
         GmsDocumentScanning.getClient(options)
     }
+    if (showRenameDialog && fileToRename != null) {
+        AlertDialog(
+            onDismissRequest = { showRenameDialog = false },
+            title = { Text("Rename File") },
+            text = {
+                OutlinedTextField(
+                    value = newFileName,
+                    onValueChange = { newFileName = it },
+                    label = { Text("New name") }
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val renamed = File(context.filesDir, "$newFileName.pdf")
+                    if (fileToRename!!.renameTo(renamed)) {
+                        pdfFiles = loadScannedPdfs(context.filesDir)
+                        Toast.makeText(context, "Renamed successfully", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(context, "Rename failed", Toast.LENGTH_SHORT).show()
+                    }
+                    showRenameDialog = false
+                }) {
+                    Text("Rename")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRenameDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (showDeleteDialog && fileToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete File") },
+            text = { Text("Are you sure you want to delete this file?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (fileToDelete!!.delete()) {
+                        pdfFiles = loadScannedPdfs(context.filesDir)
+                        Toast.makeText(context, "File deleted", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(context, "Delete failed", Toast.LENGTH_SHORT).show()
+                    }
+                    showDeleteDialog = false
+                }) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -253,15 +328,55 @@ fun DocumentScannerScreen() {
                                     )
                                 }
 
-                                IconButton(onClick = {
-                                    sharePdf(context, file)
-                                }) {
-                                    Icon(
-                                        imageVector = Icons.Default.Share,
-                                        contentDescription = "Share PDF",
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
+                                Column(horizontalAlignment = Alignment.End) {
+                                    IconButton(onClick = {
+                                        // TODO: Rename logic
+                                        fileToRename = file
+                                        newFileName = file.nameWithoutExtension
+                                        showRenameDialog = true
+
+                                    }) {
+                                        Icon(
+                                            imageVector = Icons.Default.DriveFileRenameOutline, // Replace with appropriate icon
+                                            contentDescription = "Rename PDF"
+                                        )
+                                    }
+
+                                    IconButton(onClick = {
+                                        // TODO: Delete logic
+                                        fileToDelete = file
+                                        showDeleteDialog = true
+
+                                    }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete, // Replace with appropriate icon
+                                            contentDescription = "Delete PDF",
+                                            tint = Color.Red
+                                        )
+                                    }
+
+                                    IconButton(onClick = {
+                                        sharePdf(context, file)
+                                    }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Share,
+                                            contentDescription = "Share PDF",
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+
+                                    IconButton(onClick = {
+                                        performOcrOnPdf(context, file)
+                                    }) {
+                                        Icon(
+                                            imageVector = Icons.Default.TextSnippet, // or use any OCR-style icon
+                                            contentDescription = "Extract Text from PDF",
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+
                                 }
+
                             }
                         }
                     }

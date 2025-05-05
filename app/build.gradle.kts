@@ -49,6 +49,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.vision.common)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -62,5 +63,7 @@ dependencies {
 //    implementation("com.github.barteksc:android-pdf-viewer:3.2.0-beta.1")
     implementation ("androidx.navigation:navigation-compose:2.7.3")
     implementation( "androidx.compose.material:material-icons-extended")
+    implementation("com.google.mlkit:text-recognition:16.0.0")
+
 
 }
