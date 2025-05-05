@@ -53,6 +53,7 @@ import java.io.FileOutputStream
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DriveFileRenameOutline
+import androidx.compose.material.icons.filled.MoreVert
 import kotlinx.coroutines.launch
 
 
@@ -68,7 +69,7 @@ class MainActivity : ComponentActivity() {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White),
+                .background(Color.Black),
             contentAlignment = Alignment.Center
         ) {
             Image(
@@ -353,58 +354,57 @@ fun DocumentScannerScreen() {
                                 }
 
 
-                                Column(horizontalAlignment = Alignment.End) {
-                                    IconButton(onClick = {
-                                        // TODO: Rename logic
-                                        fileToRename = file
-                                        newFileName = file.nameWithoutExtension
-                                        showRenameDialog = true
+                                var expanded by remember { mutableStateOf(false) }
 
-                                    }) {
+                                Box {
+                                    IconButton(onClick = { expanded = true }) {
                                         Icon(
-                                            imageVector = Icons.Default.DriveFileRenameOutline, // Replace with appropriate icon
-                                            contentDescription = "Rename PDF"
+                                            imageVector = Icons.Default.MoreVert,
+                                            contentDescription = "More options"
                                         )
                                     }
 
-                                    IconButton(onClick = {
-                                        // TODO: Delete logic
-                                        fileToDelete = file
-                                        showDeleteDialog = true
-
-                                    }) {
-                                        Icon(
-                                            imageVector = Icons.Default.Delete, // Replace with appropriate icon
-                                            contentDescription = "Delete PDF",
-                                            tint = Color.Red
+                                    DropdownMenu(
+                                        expanded = expanded,
+                                        onDismissRequest = { expanded = false }
+                                    ) {
+                                        DropdownMenuItem(
+                                            text = { Text("Rename") },
+                                            onClick = {
+                                                fileToRename = file
+                                                newFileName = file.nameWithoutExtension
+                                                showRenameDialog = true
+                                                expanded = false
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("Delete") },
+                                            onClick = {
+                                                fileToDelete = file
+                                                showDeleteDialog = true
+                                                expanded = false
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("Share") },
+                                            onClick = {
+                                                sharePdf(context, file)
+                                                expanded = false
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("Extract Text (OCR)") },
+                                            onClick = {
+                                                coroutineScope.launch {
+                                                    val text = extractTextFromPdf(context, file)
+                                                    ocrResultText = text
+                                                }
+                                                expanded = false
+                                            }
                                         )
                                     }
-
-                                    IconButton(onClick = {
-                                        sharePdf(context, file)
-                                    }) {
-                                        Icon(
-                                            imageVector = Icons.Default.Share,
-                                            contentDescription = "Share PDF",
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-
-                                    IconButton(onClick = {
-                                        coroutineScope.launch {
-                                            val text = extractTextFromPdf(context, file)
-                                            ocrResultText = text
-                                        }
-                                    }) {
-                                        Icon(
-                                            imageVector = Icons.Default.TextSnippet,
-                                            contentDescription = "Extract Text from PDF",
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-
-
                                 }
+
 
                             }
                         }
@@ -416,14 +416,15 @@ fun DocumentScannerScreen() {
 }
 
 private val LightColors = lightColorScheme(
-    primary = Color(0xFF1976D2),
+    primary = Color(0xFFD32F2F),
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFE3F2FD),
-    onPrimaryContainer = Color(0xFF0D47A1),
-    background = Color(0xFFF9F9F9),
+    primaryContainer = Color(0xFFFFCDD2),
+    onPrimaryContainer = Color(0xFFD32F2F),
+    background = Color(0xFFFFF5F5),
     surface = Color.White,
     onSurface = Color.Black,
 )
+
 
 fun getPdfPreview(file: File): Bitmap? {
     return try {
