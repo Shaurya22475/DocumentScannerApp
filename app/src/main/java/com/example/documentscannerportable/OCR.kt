@@ -1,58 +1,41 @@
+package com.example.documentscannerportable
+
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
 import android.util.Log
-import android.widget.Toast
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import kotlinx.coroutines.tasks.await
 import java.io.File
-import java.io.FileOutputStream
 
-fun performOcrOnPdf(context: Context, pdfFile: File) {
+suspend fun extractTextFromPdf(context: Context, pdfFile: File): String {
     val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+    val extractedTextBuilder = StringBuilder()
 
     try {
-        val fileDescriptor: ParcelFileDescriptor =
-            ParcelFileDescriptor.open(pdfFile, ParcelFileDescriptor.MODE_READ_ONLY)
+        val fileDescriptor = ParcelFileDescriptor.open(pdfFile, ParcelFileDescriptor.MODE_READ_ONLY)
         val pdfRenderer = PdfRenderer(fileDescriptor)
 
-        if (pdfRenderer.pageCount == 0) {
-            Toast.makeText(context, "PDF is empty", Toast.LENGTH_SHORT).show()
-            return
+        for (i in 0 until pdfRenderer.pageCount) {
+            val page = pdfRenderer.openPage(i)
+            val bitmap = Bitmap.createBitmap(page.width, page.height, Bitmap.Config.ARGB_8888)
+            page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+            page.close()
+
+            val image = InputImage.fromBitmap(bitmap, 0)
+            val result = recognizer.process(image).await()
+            extractedTextBuilder.append("Page ${i + 1}:\n${result.text}\n\n")
         }
 
-        val page = pdfRenderer.openPage(0)
-        val bitmap = Bitmap.createBitmap(page.width, page.height, Bitmap.Config.ARGB_8888)
-        page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-        page.close()
         pdfRenderer.close()
-
-        val image = InputImage.fromBitmap(bitmap, 0)
-
-        recognizer.process(image)
-            .addOnSuccessListener { visionText ->
-                val text = visionText.text
-                Log.d("OCR", "Extracted Text:\n$text")
-
-                // Write to file
-                val outputFile = File(context.filesDir, "extracted_text.txt")
-                try {
-                    FileOutputStream(outputFile).use { it.write(text.toByteArray()) }
-                    Toast.makeText(context, "OCR saved to ${outputFile.absolutePath}", Toast.LENGTH_LONG).show()
-                } catch (e: Exception) {
-                    Log.e("OCR", "Error writing text file", e)
-                    Toast.makeText(context, "Failed to save OCR output: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
-            }
-            .addOnFailureListener { e ->
-                Log.e("OCR", "Text recognition failed", e)
-                Toast.makeText(context, "OCR failed: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-
+        fileDescriptor.close()
     } catch (e: Exception) {
-        Log.e("OCR", "Error reading PDF", e)
-        Toast.makeText(context, "Failed to read PDF: ${e.message}", Toast.LENGTH_SHORT).show()
+        Log.e("OCR", "Failed to extract text", e)
+        extractedTextBuilder.append("OCR failed: ${e.message}")
     }
+
+    return extractedTextBuilder.toString()
 }

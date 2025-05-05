@@ -53,6 +53,7 @@ import java.io.FileOutputStream
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DriveFileRenameOutline
+import kotlinx.coroutines.launch
 
 
 class MainActivity : ComponentActivity() {
@@ -112,6 +113,8 @@ fun DocumentScannerScreen() {
     var fileToDelete by remember { mutableStateOf<File?>(null) }
     var showDeleteDialog by remember { mutableStateOf(false) }
 
+    val coroutineScope = rememberCoroutineScope()
+    var ocrResultText by remember { mutableStateOf<String?>(null) }
 
 
     val scannerLauncher = rememberLauncherForActivityResult(
@@ -327,6 +330,28 @@ fun DocumentScannerScreen() {
                                         style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
                                     )
                                 }
+                                if (ocrResultText != null) {
+                                    AlertDialog(
+                                        onDismissRequest = { ocrResultText = null },
+                                        title = { Text("OCR Result") },
+                                        text = {
+                                            Column(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .heightIn(max = 400.dp)
+                                                    .verticalScroll(rememberScrollState())
+                                            ) {
+                                                Text(text = ocrResultText!!)
+                                            }
+                                        },
+                                        confirmButton = {
+                                            TextButton(onClick = { ocrResultText = null }) {
+                                                Text("Close")
+                                            }
+                                        }
+                                    )
+                                }
+
 
                                 Column(horizontalAlignment = Alignment.End) {
                                     IconButton(onClick = {
@@ -366,14 +391,18 @@ fun DocumentScannerScreen() {
                                     }
 
                                     IconButton(onClick = {
-                                        performOcrOnPdf(context, file)
+                                        coroutineScope.launch {
+                                            val text = extractTextFromPdf(context, file)
+                                            ocrResultText = text
+                                        }
                                     }) {
                                         Icon(
-                                            imageVector = Icons.Default.TextSnippet, // or use any OCR-style icon
+                                            imageVector = Icons.Default.TextSnippet,
                                             contentDescription = "Extract Text from PDF",
                                             tint = MaterialTheme.colorScheme.primary
                                         )
                                     }
+
 
                                 }
 
