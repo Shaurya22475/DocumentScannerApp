@@ -1,0 +1,32 @@
+# Gradle
+.gradle/
+build/
+**/build/
+
+# Local properties (contains SDK path)
+local.properties
+
+# Android Studio
+.idea/
+*.iml
+
+# IntelliJ-specific
+*.ipr
+*.iws
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# NDK/External Builds
+.externalNativeBuild/
+.cxx/
+
+# Captures
+captures/
+
+# Keystores
+*.jks
+
+# Logs
+*.log
