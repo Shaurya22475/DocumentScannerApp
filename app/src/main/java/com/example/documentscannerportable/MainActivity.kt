@@ -255,11 +255,37 @@ fun DocumentScannerScreen() {
                 .padding(horizontal = 16.dp)
                 .padding(top = paddingValues.calculateTopPadding())
         ) {
-            Text(
-                text = "Scannr",
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(vertical = 16.dp)
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 24.dp)
+            ) {
+                Image(
+                    painter = painterResource(id = R.mipmap.ic_launcher_foreground),
+                    contentDescription = "App Logo",
+                    modifier = Modifier
+                        .size( 100.dp)
+                        .padding(end = 0.dp)
+                )
+
+                Column {
+                    Text(
+                        text = "Scannr",
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontWeight = FontWeight.Bold,
+//                            color = MaterialTheme.colorScheme.primary
+                            color = Color(0xFFFF6D6D)
+                        )
+                    )
+                    Text(
+                        text = "Your scanned PDFs at a glance",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                }
+            }
+
 
             val scrollState = rememberScrollState()
 
