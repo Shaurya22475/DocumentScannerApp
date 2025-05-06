@@ -256,7 +256,7 @@ fun DocumentScannerScreen() {
                 .padding(top = paddingValues.calculateTopPadding())
         ) {
             Text(
-                text = "Scanned PDFs",
+                text = "Scannr",
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.padding(vertical = 16.dp)
             )
@@ -269,8 +269,34 @@ fun DocumentScannerScreen() {
                     .verticalScroll(scrollState)
             ) {
                 if (pdfFiles.isEmpty()) {
-                    Text("No scanned PDFs yet.", style = MaterialTheme.typography.bodyMedium)
-                } else {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = 48.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.TextSnippet,
+                            contentDescription = "Empty State Icon",
+                            tint = Color.Gray,
+                            modifier = Modifier
+                                .size(80.dp)
+                                .padding(bottom = 16.dp)
+                        )
+                        Text(
+                            text = "No scanned PDFs yet.",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.Gray
+                        )
+                        Text(
+                            text = "Tap the + button below to scan your first document.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+                }
+                else {
                     pdfFiles.forEach { file ->
                         Card(
                             modifier = Modifier
